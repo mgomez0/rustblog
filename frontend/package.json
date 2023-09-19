@@ -1,0 +1,15 @@
+{
+  "name": "rusty_blog_frontend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "loadBlogPosts.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "marked": "^7.0.3"
+  }
+}
