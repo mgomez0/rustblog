@@ -105,14 +105,21 @@ async fn create(
     payload: web::Json<PostPayload>,
     req_user: Option<ReqData<crate::TokenClaims>>,
 ) -> Result<HttpResponse, Error> {
-    let post = web::block(move || {
-        let mut conn = pool.get()?;
-        create_post(&mut conn, &payload.title, &payload.message)
-    })
-    .await?
-    .map_err(actix_web::error::ErrorInternalServerError)?;
-
-    Ok(HttpResponse::Ok().json(post))
+    match req_user {
+        Some(user) => {
+            let post = web::block(move || {
+                let mut conn = pool.get()?;
+                create_post(&mut conn, &payload.title, &payload.message)
+            })
+            .await?
+            .map_err(actix_web::error::ErrorInternalServerError)?;
+            Ok(HttpResponse::Ok().json(post))
+        }
+        None => {
+            warn!("no user");
+            Ok(HttpResponse::Unauthorized().json("Must provide a valid token"))
+        }
+    }
 }
 
 #[get("/posts/{id}")]
