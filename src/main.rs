@@ -2,8 +2,11 @@
 extern crate diesel;
 
 use actix_cors::Cors;
+use actix_files as fs;
+use actix_identity::IdentityMiddleware;
+use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::HttpMessage;
-use actix_web::{dev::ServiceRequest, middleware, web, App, Error, HttpServer};
+use actix_web::{cookie::Key, dev::ServiceRequest, middleware, web, App, Error, HttpServer};
 use actix_web_httpauth::{
     extractors::{
         bearer::{self, BearerAuth},
@@ -60,7 +63,11 @@ async fn validator(
     }
 }
 
-#[actix_web::main] // or #[tokio::main]
+async fn fallback_route() -> actix_web::Result<actix_files::NamedFile> {
+    Ok(actix_files::NamedFile::open("frontend/index.html")?)
+}
+
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Loading .env into environment variable.
     dotenv::dotenv().ok();
@@ -73,15 +80,23 @@ async fn main() -> std::io::Result<()> {
     let pool: DbPool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
+    let redis_uri = std::env::var("REDIS_URI").expect("REDIS_URI must be set");
+    let secret_key = Key::generate();
+    let redis_session_store = RedisSessionStore::new(redis_uri).await.unwrap();
 
     HttpServer::new(move || {
         let bearer_middleware = HttpAuthentication::bearer(validator);
         App::new()
             .app_data(web::Data::new(pool.clone()))
+            .wrap(SessionMiddleware::new(
+                redis_session_store.clone(),
+                secret_key.clone(),
+            ))
             .wrap(Cors::permissive())
             .wrap(middleware::Logger::default())
-            .route("/", web::get().to(|| async { "Actix REST API" }))
-            .service(handlers::index)
+            .service(fs::Files::new("/frontend", "./frontend").show_files_listing())
+            .route("/{tail:.*}", web::get().to(fallback_route))
+            .service(handlers::get_posts)
             .service(handlers::show)
             .service(handlers::update)
             .service(handlers::destroy)

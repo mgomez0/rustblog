@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchPosts() {
         try {
-            const response = await fetch("http://localhost:3030/posts");
+            const response = await fetch("http://localhost:3030/api/posts");
 
             if (!response.ok) {
                 throw new Error(`Request failed with status: ${response.status}`);

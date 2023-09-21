@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 
 type DbError = Box<dyn std::error::Error + Send + Sync>;
 
-#[post("/users")]
+#[post("/api/users")]
 async fn create_user(
     pool: web::Data<DbPool>,
     payload: web::Json<crate::models::UserPayload>,
@@ -37,7 +37,7 @@ async fn create_user(
     Ok(HttpResponse::Ok().json(user))
 }
 
-#[get("/login")]
+#[get("/api/login")]
 async fn basic_auth(
     pool: web::Data<DbPool>,
     credentials: BasicAuth,
@@ -87,8 +87,8 @@ async fn basic_auth(
     }
 }
 
-#[get("/posts")]
-async fn index(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+#[get("/api/posts")]
+async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let posts = web::block(move || {
         let mut conn = pool.get()?;
         get_all_posts(&mut conn)
@@ -99,7 +99,7 @@ async fn index(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().json(posts))
 }
 
-#[post("/posts")]
+#[post("/api/posts")]
 async fn create(
     pool: web::Data<DbPool>,
     payload: web::Json<PostPayload>,
@@ -122,7 +122,7 @@ async fn create(
     }
 }
 
-#[get("/posts/{id}")]
+#[get("/api/posts/{id}")]
 async fn show(_id: web::Path<i32>, pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let post = web::block(move || {
         let mut conn = pool.get()?;
@@ -134,12 +134,12 @@ async fn show(_id: web::Path<i32>, pool: web::Data<DbPool>) -> Result<HttpRespon
     Ok(HttpResponse::Ok().json(post))
 }
 
-#[put("/posts/{id}")]
+#[put("/api/posts/{id}")]
 async fn update(_id: web::Path<String>) -> impl Responder {
     HttpResponse::Ok().body(format!("post#edit {}", _id))
 }
 
-#[delete("/posts/{id}")]
+#[delete("/api/posts/{id}")]
 async fn destroy(_id: web::Path<String>) -> impl Responder {
     HttpResponse::Ok().body(format!("post#delete {}", _id))
 }
