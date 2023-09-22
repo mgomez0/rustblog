@@ -94,19 +94,22 @@ async fn main() -> std::io::Result<()> {
             ))
             .wrap(Cors::permissive())
             .wrap(middleware::Logger::default())
-            .service(fs::Files::new("/frontend", "./frontend").show_files_listing())
-            .route("/{tail:.*}", web::get().to(fallback_route))
-            .service(handlers::get_posts)
-            .service(handlers::show)
-            .service(handlers::update)
-            .service(handlers::destroy)
-            .service(handlers::basic_auth)
-            .service(handlers::create_user)
             .service(
-                web::scope("")
-                    .wrap(bearer_middleware)
-                    .service(handlers::create),
+                web::scope("/api")
+                    .service(handlers::get_posts)
+                    .service(handlers::show)
+                    .service(handlers::update)
+                    .service(handlers::destroy)
+                    .service(handlers::create_user)
+                    .service(handlers::basic_auth)
+                    .service(
+                        web::scope("")
+                            .wrap(bearer_middleware)
+                            .service(handlers::create),
+                    ),
             )
+            .service(fs::Files::new("/frontend", "./frontend").show_files_listing())
+            .route("/home", web::get().to(fallback_route))
     })
     .bind(("127.0.0.1", 3030))?
     .run()

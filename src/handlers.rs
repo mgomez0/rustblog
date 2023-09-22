@@ -4,24 +4,18 @@ use sha2::Sha256;
 
 use crate::models::{NewPost, Post, PostPayload};
 use crate::TokenClaims;
-use actix_web::{
-    delete, get, post, put, web,
-    web::{Data, Json, ReqData},
-    Error, HttpResponse, Responder,
-};
+use actix_web::{delete, get, post, put, web, web::ReqData, Error, HttpResponse, Responder};
 use actix_web_httpauth::extractors::basic::BasicAuth;
 use argonautica::{Hasher, Verifier};
 use diesel::prelude::*;
-use diesel::result::Error as DieselError;
 use hmac::{Hmac, Mac};
 use jwt::SignWithKey;
 use log::{info, warn};
 use rusty_api::models::Users;
-use serde::{Deserialize, Serialize};
 
 type DbError = Box<dyn std::error::Error + Send + Sync>;
 
-#[post("/api/users")]
+#[post("/users")]
 async fn create_user(
     pool: web::Data<DbPool>,
     payload: web::Json<crate::models::UserPayload>,
@@ -37,7 +31,7 @@ async fn create_user(
     Ok(HttpResponse::Ok().json(user))
 }
 
-#[get("/api/login")]
+#[get("/login")]
 async fn basic_auth(
     pool: web::Data<DbPool>,
     credentials: BasicAuth,
@@ -87,7 +81,7 @@ async fn basic_auth(
     }
 }
 
-#[get("/api/posts")]
+#[get("/posts")]
 async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let posts = web::block(move || {
         let mut conn = pool.get()?;
@@ -99,7 +93,7 @@ async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().json(posts))
 }
 
-#[post("/api/posts")]
+#[post("/posts")]
 async fn create(
     pool: web::Data<DbPool>,
     payload: web::Json<PostPayload>,
@@ -122,7 +116,7 @@ async fn create(
     }
 }
 
-#[get("/api/posts/{id}")]
+#[get("/posts/{id}")]
 async fn show(_id: web::Path<i32>, pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let post = web::block(move || {
         let mut conn = pool.get()?;
@@ -134,12 +128,12 @@ async fn show(_id: web::Path<i32>, pool: web::Data<DbPool>) -> Result<HttpRespon
     Ok(HttpResponse::Ok().json(post))
 }
 
-#[put("/api/posts/{id}")]
+#[put("/posts/{id}")]
 async fn update(_id: web::Path<String>) -> impl Responder {
     HttpResponse::Ok().body(format!("post#edit {}", _id))
 }
 
-#[delete("/api/posts/{id}")]
+#[delete("/posts/{id}")]
 async fn destroy(_id: web::Path<String>) -> impl Responder {
     HttpResponse::Ok().body(format!("post#delete {}", _id))
 }
