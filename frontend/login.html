@@ -1,0 +1,61 @@
+<!-- src/frontend/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="frontend/utils/htmx.min.js"></script>
+    <link rel="stylesheet" href="frontend/styles/style.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>gomez x development</h1>
+    </header>
+
+    <form id="loginForm">
+        <label>Username
+            <input type="text" placeholder="Enter Username" name="username" id="username">
+        </label>
+
+        <label>Password
+            <input type="password" placeholder="Enter Password" name="password" id="password">
+        </label>
+
+        <button type="submit">Login</button>
+    </form>
+</body>
+
+</html>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', function (event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        var username = document.getElementById('username').value;
+        var password = document.getElementById('password').value;
+
+        // Set up the data to be sent as a FormData object
+        var formData = new FormData();
+        formData.append('username', username);
+        formData.append('password', password);
+
+        // Send the POST request using fetch
+        fetch('http://localhost:3030/api/auth', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json(); // Parse the response body as JSON
+            })
+            .then(data => {
+                console.log(data); // Handle the JSON data
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    });
+</script>

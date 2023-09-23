@@ -31,7 +31,7 @@ async fn create_user(
     Ok(HttpResponse::Ok().json(user))
 }
 
-#[get("/login")]
+#[post("/auth")]
 async fn basic_auth(
     pool: web::Data<DbPool>,
     credentials: BasicAuth,
