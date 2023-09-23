@@ -6,7 +6,10 @@ use actix_files as fs;
 use actix_identity::IdentityMiddleware;
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::HttpMessage;
-use actix_web::{cookie::Key, dev::ServiceRequest, middleware, web, App, Error, HttpServer};
+use actix_web::{
+    cookie::Key, dev::ServiceRequest, http::header, middleware, web, App, Error, HttpResponse,
+    HttpServer,
+};
 use actix_web_httpauth::{
     extractors::{
         bearer::{self, BearerAuth},

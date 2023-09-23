@@ -4,7 +4,10 @@ use sha2::Sha256;
 
 use crate::models::{NewPost, Post, PostPayload};
 use crate::TokenClaims;
-use actix_web::{delete, get, post, put, web, web::ReqData, Error, HttpResponse, Responder};
+use actix_web::{
+    delete, get, http::header::LOCATION, post, put, web, web::ReqData, Error, HttpResponse,
+    Responder,
+};
 use actix_web_httpauth::extractors::basic::BasicAuth;
 use argonautica::{Hasher, Verifier};
 use diesel::prelude::*;
@@ -73,7 +76,10 @@ async fn basic_auth(
                     id: desired_user.id,
                 };
                 let token_str = claims.sign_with_key(&jwt_secret).unwrap();
-                Ok(HttpResponse::Ok().json(token_str))
+                info!("token_str: {}", token_str);
+                Ok(HttpResponse::SeeOther()
+                    .insert_header((LOCATION, "/home"))
+                    .finish())
             } else {
                 Ok(HttpResponse::Unauthorized().json("Incorrect username or password"))
             }
