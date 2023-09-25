@@ -74,6 +74,10 @@ async fn login_route() -> actix_web::Result<actix_files::NamedFile> {
     Ok(actix_files::NamedFile::open("frontend/login.html")?)
 }
 
+async fn admin_route() -> actix_web::Result<actix_files::NamedFile> {
+    Ok(actix_files::NamedFile::open("frontend/admin.html")?)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Loading .env into environment variable.
@@ -118,6 +122,7 @@ async fn main() -> std::io::Result<()> {
             .service(fs::Files::new("/frontend", "./frontend").show_files_listing())
             .route("/login", web::get().to(login_route))
             .route("/home", web::get().to(fallback_route))
+            .route("/admin", web::get().to(admin_route))
     })
     .bind(("127.0.0.1", 3030))?
     .run()

@@ -78,7 +78,7 @@ async fn basic_auth(
                 let token_str = claims.sign_with_key(&jwt_secret).unwrap();
                 info!("token_str: {}", token_str);
                 Ok(HttpResponse::SeeOther()
-                    .insert_header((LOCATION, "/home"))
+                    .insert_header((LOCATION, "/admin"))
                     .finish())
             } else {
                 Ok(HttpResponse::Unauthorized().json("Incorrect username or password"))
