@@ -1,48 +1,48 @@
 // src/auth.rs
-
-use crate::errors::ServiceError;
-use alcoholic_jwt::{token_kid, validate, Validation, JWKS};
+use actix_web::HttpMessage;
+use actix_web::{dev::ServiceRequest, Error};
+use actix_web_httpauth::extractors::{
+    bearer::{self, BearerAuth},
+    AuthenticationError,
+};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    sub: String,
-    company: String,
-    exp: usize,
+use hmac::{Hmac, Mac};
+use jwt::VerifyWithKey;
+use sha2::Sha256;
+//
+//
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TokenClaims {
+    pub id: i32,
 }
 
-pub fn validate_token(token: &str) -> Result<bool, ServiceError> {
-    let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
-    let jwks = fetch_jwks(&format!(
-        "{}{}",
-        authority.as_str(),
-        ".well-known/jwks.json"
-    ));
-    let validations = vec![Validation::Issuer(authority), Validation::SubjectPresent];
-    let kid = match token_kid(&token) {
-        Ok(res) => res.expect("failed to decode kid"),
-        Err(_) => return Err(ServiceError::JWKSFetchError),
-    };
-    let res = validate(token, jwk, validations);
-    Ok(res.is_ok())
-}
+pub async fn validator(
+    req: ServiceRequest,
+    credentials: BearerAuth,
+) -> Result<ServiceRequest, (Error, ServiceRequest)> {
+    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let key: Hmac<Sha256> =
+        Hmac::new_from_slice(jwt_secret.as_bytes()).expect("HMAC can take key of any size");
+    let token_string = credentials.token();
 
-// src/auth.rs
+    let claims: Result<TokenClaims, &str> = token_string
+        .verify_with_key(&key)
+        .map_err(|_| "Invalid token");
 
-async fn fetch_jwks(uri: &str) -> Result<JWKS, Box<dyn Error>> {
-    let mut res = reqwest::get(uri).await?;
-    // Ensure the res status is successful (2xx)
-    if res.status().is_success() {
-        // Parse the JSON res
-        let json_res: serde_json::Value = res.json().await?;
+    match claims {
+        Ok(value) => {
+            req.extensions_mut().insert(value);
+            Ok(req)
+        }
+        Err(_) => {
+            let config = req
+                .app_data::<bearer::Config>()
+                .cloned()
+                .unwrap_or_default()
+                .scope("");
 
-        // Now you can work with the JSON data
-        println!("{:?}", json_res);
-
-        Ok(())
-    } else {
-        eprintln!("Request failed with status code: {}", res.status());
-        Err(reqwest::Error::from(res))
+            Err((AuthenticationError::from(config).into(), req))
+        }
     }
 }

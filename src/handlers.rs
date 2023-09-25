@@ -2,8 +2,8 @@ use super::DbPool;
 
 use sha2::Sha256;
 
+use crate::auth::TokenClaims;
 use crate::models::{NewPost, Post, PostPayload};
-use crate::TokenClaims;
 use actix_web::{
     delete, get, http::header::LOCATION, post, put, web, web::ReqData, Error, HttpResponse,
     Responder,
@@ -103,7 +103,7 @@ async fn get_posts(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
 async fn create(
     pool: web::Data<DbPool>,
     payload: web::Json<PostPayload>,
-    req_user: Option<ReqData<crate::TokenClaims>>,
+    req_user: Option<ReqData<crate::auth::TokenClaims>>,
 ) -> Result<HttpResponse, Error> {
     match req_user {
         Some(user) => {
