@@ -13,6 +13,7 @@ use diesel::r2d2::{self, ConnectionManager};
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 mod auth;
+mod errors;
 mod handlers;
 mod models;
 mod schema;
@@ -60,14 +61,14 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api")
                     .service(handlers::get_posts)
                     .service(handlers::show)
-                    .service(handlers::update)
-                    .service(handlers::destroy)
-                    .service(handlers::create_user)
                     .service(handlers::basic_auth)
                     .service(
                         web::scope("")
                             .wrap(bearer_middleware)
-                            .service(handlers::create),
+                            .service(handlers::create)
+                            .service(handlers::create_user)
+                            .service(handlers::update)
+                            .service(handlers::destroy),
                     ),
             )
             .service(fs::Files::new("/frontend", "./frontend").show_files_listing())

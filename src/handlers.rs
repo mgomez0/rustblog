@@ -3,6 +3,7 @@ use super::DbPool;
 use sha2::Sha256;
 
 use crate::auth::TokenClaims;
+use crate::errors::LoginError;
 use crate::models::{NewPost, Post, PostPayload};
 use actix_web::{
     delete, get, http::header::LOCATION, post, put, web, web::ReqData, Error, HttpResponse,
