@@ -3,7 +3,7 @@ use super::DbPool;
 use sha2::Sha256;
 
 use crate::auth::TokenClaims;
-use crate::errors::LoginError;
+use crate::errors::AuthError;
 use crate::models::{NewPost, Post, PostPayload};
 use actix_web::{
     delete, get, http::header::LOCATION, post, put, web, web::ReqData, Error, HttpResponse,
@@ -53,10 +53,10 @@ async fn basic_auth(
     info!("username: {}", username);
     let desired_user = web::block(move || {
         let mut conn = pool.get()?;
-        find_by_username(username, &mut conn)
+        find_by_username(&username, &mut conn)
     })
-    .await?
-    .map_err(actix_web::error::ErrorInternalServerError)?;
+    .await
+    .map_err(|err| AuthError::InvalidCredentials(err.into()))?;
 
     info!("desired_user: {:?}", desired_user);
     match password {
@@ -65,8 +65,10 @@ async fn basic_auth(
             let hash_secret = std::env::var("HASH_SECRET").expect("HASH_SECRET must be set!");
             info!("hash_secret: {}", hash_secret);
             let mut verifier = Verifier::default();
+            let password = &desired_user.as_ref().unwrap().password;
+
             let is_valid = verifier
-                .with_hash(desired_user.password)
+                .with_hash(password)
                 .with_password(pass)
                 .with_secret_key(hash_secret)
                 .verify()
@@ -74,7 +76,7 @@ async fn basic_auth(
 
             if is_valid {
                 let claims = TokenClaims {
-                    id: desired_user.id,
+                    id: desired_user.unwrap().id,
                 };
                 let token_str = claims.sign_with_key(&jwt_secret).unwrap();
                 info!("token_str: {}", token_str);
@@ -199,7 +201,7 @@ fn find_by_id(post_id: i32, conn: &mut PgConnection) -> Result<Option<Post>, DbE
     Ok(post)
 }
 
-fn find_by_username(_username: String, conn: &mut PgConnection) -> Result<Users, DbError> {
+fn find_by_username(_username: &str, conn: &mut PgConnection) -> Result<Users, DbError> {
     use crate::schema::users::dsl::*;
     let user = users.filter(username.eq(_username)).first::<Users>(conn)?;
 
